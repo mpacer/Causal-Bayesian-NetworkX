@@ -44,20 +44,23 @@ def hidden_cause_pairs(graph):
             
 def completeDiGraph(nodes):
     """
-    returns a directed graph with all possible edges
+    returns a directed graph with all possible edges for a set of nodes
     
     Variables:
     nodes are a list of strings that specify the node names
     """
-    G = nx.DiGraph()
-    G.add_nodes_from(nodes)
-    edgelist = list(combinations(nodes,2))
-    edgelist.extend([(y,x) for x,y in list(combinations(nodes,2))])
-    edgelist.extend([(x,x) for x in nodes])
-    G.add_edges_from(edgelist)
+    G = nx.DiGraph() # Creates new graph
+    G.add_nodes_from(nodes) # adds nodes to graph
+    edgelist = list(combinations(nodes,2)) # build list of directed edges
+    edgelist.extend([(y,x) for x,y in list(combinations(nodes,2))]) #add symmetric edges
+    edgelist.extend([(x,x) for x in nodes]) # add self-loops
+    G.add_edges_from(edgelist) # add edges to graph
     return G
 
 def filter_maxGraph(G,filter_set):
+    """
+    This allows us to apply a set of filters encoded as closures/first-order functions that take a graph as input and return a graph as output.
+    """
     graph = G.copy()
     for f in filter_set:
         graph = f(graph)
@@ -79,13 +82,25 @@ def partialConditionalSubgraphs(G,edge_set,condition_list):
             yield G_test
 
 def conditionalSubgraphs(G,condition_list):
+    """
+    Returns a graph generator/iterator such that any conditions specified in condition_list 
+    are met by some subgraph of G.
+    This is intended to be used in conjunction with completeDiGraph or any graph which subgraphs 
+    are expected to be taken.
+    
+    Variables: 
+    G is a graph from which subgraphs will be taken.
+    condition_list is a list of first order functions that will be applied to filter the subgraphs of G.
+    Functions in condition_list should return a single boolean value for every graph passed into them.
+    """
+
     try: 
         condition_list[0]
     except TypeError:
         raise TypeError("""
         Subsampling from a graph requires passing in a list of conditions encoded
         as first-class functions that accept networkX graphs as an input and return boolean values.""")
-    edge_powerset = powerset(G.edges())
+    # edge_powerset = powerset(G.edges())
  
     for edges in powerset(G.edges()):
         G_test = G.copy()
@@ -95,6 +110,10 @@ def conditionalSubgraphs(G,condition_list):
             yield G_test
 
 def create_path_complete_condition(transmit_node_pairs):
+    """
+    This creates a closure that takes a graph as its input and returns a boolean value indicating whether the pairs of nodes in transmit_node_pairs are able to communicate from each tuple in transmit_node_pairs such that there is a path from transmit_node_pairs[i][0] to transmit_node_pairs[i][1]
+    """
+
     def path_complete_condition(G):
         return all([nx.has_path(G,x,y) for x,y in transmit_node_pairs])
     return path_complete_condition
@@ -104,10 +123,13 @@ def create_no_input_node_condition(node_list):
         return all([G.in_degree(y)==0 for y in node_list])
     return no_input_node_condition
 
-def create_no_self_loops():
-    def no_self_loops(G):
+def create_no_self_loop_condition():
+    """
+    returns 
+    """
+    def no_self_loop_condition(G):
         return not(any([(y,y) in G.edges() for y in G.nodes()]))
-    return no_self_loops
+    return no_self_loop_filter
     
 def create_explicit_parent_condition(parentage_tuple_list):
     """
@@ -140,19 +162,21 @@ def create_no_output_node_condition(node_list):
     return no_output_node_condition
 
 
-def extract_remove_self_loops():
-    def remove_self_loops(G):
+def extract_remove_self_loops_filter():
+    def remove_self_loops_filter(G):
         graph = G.copy()
-        graph.remove_edges_from(graph.selfloop_edges())
+        graph.remove_edges_from(graph.selfloop_edges()) #this is a networkX method that allows you to automatically grab edges that are self-loops.
         return graph
-    return remove_self_loops
+    return remove_self_loops_filter
 
-def extract_remove_inward_edges(exceptions_from_removal):
+def extract_remove_inward_edges_filter(exceptions_from_removal):
     """
-    This covers both no input and explicit_child_parentage.
+
+
+    This covers both orphans and explicit_child_parentage.
     """
     
-    def remove_inward_edges(G):
+    def remove_inward_edges_filter(G):
         graph = G.copy()
         list_of_children = [x[0] for x in exceptions_from_removal if len(x[1]) > 0]
         list_of_orphans = [x[0] for x in exceptions_from_removal if len(x[1]) == 0]
@@ -166,14 +190,20 @@ def extract_remove_inward_edges(exceptions_from_removal):
             graph.remove_edges_from([edge for edge in current_edges if edge not in valid_edges])
         
         return graph
-    return remove_inward_edges
+    return remove_inward_edges_filter
 
-def extract_remove_outward_edges(exceptions_from_removal):
+def extract_remove_outward_edges_filter(exceptions_from_removal):
     """
-    This covers both no_output and explicit_parent_offspring.
+    This creates a closure that goes through the list of tuples to explicitly state which edges are leaving from the first argument of each tuple.
+
+    Each tuple that is passed in has two members. The first member is a string representing a single node from which the children will be explicitly stated. The second member is the list of nodes that are in its child set.
+
+    If the 
+
+    This covers both barren_nodes and explicit_parent_offspring.
     """
     
-    def remove_outward_edges(G):
+    def remove_outward_edges_filter(G):
         graph = G.copy()
         list_of_parents = [x[0] for x in exceptions_from_removal if len(x[1]) > 0]
         list_of_barrens = [x[0] for x in exceptions_from_removal if len(x[1]) == 0]
@@ -187,7 +217,25 @@ def extract_remove_outward_edges(exceptions_from_removal):
             graph.remove_edges_from([edge for edge in current_edges if edge not in valid_edges])
             
         return graph
-    return remove_outward_edges
+    return remove_outward_edges_filter
+
+def barren_nodes_filter(list_of_barren_nodes):
+    """
+    This allows for a nicer syntax for specifying that nodes are barren (that they have no children).
+    """
+
+    new_list = [(node,[]) for node in list_of_barren_nodes]
+    return extract_remove_outward_edges_filter(new_list)
+
+
+def orphan_nodes_filter(list_of_orphan_nodes):
+    """
+    This allows for a nicer syntax for specifying that nodes are orphans (that they have no parents).
+
+    """
+
+    new_list = [(node,[]) for node in list_of_orphan_nodes]
+    return extract_remove_inward_edges_filter(new_list)
 
 # def add_edge_attribute(graph,edge,attribute_name,attribute_value):
 #     graph[edge[0]][edge[1]][attribute_name]=attribute_value
