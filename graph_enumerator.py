@@ -123,6 +123,13 @@ def create_no_input_node_condition(node_list):
         return all([G.in_degree(y)==0 for y in node_list])
     return no_input_node_condition
 
+
+def create_is_dag_condition(node_list):
+    def is_dag_condition(G):
+        return nx.is_directed_acyclic_graph(G)
+    return is_dag_condition
+
+
 def create_no_self_loop_condition():
     """
     returns 
@@ -171,7 +178,6 @@ def extract_remove_self_loops_filter():
 
 def extract_remove_inward_edges_filter(exceptions_from_removal):
     """
-
 
     This covers both orphans and explicit_child_parentage.
     """
