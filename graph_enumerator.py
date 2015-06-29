@@ -57,7 +57,7 @@ def completeDiGraph(nodes):
     G.add_edges_from(edgelist) # add edges to graph
     return G
 
-def filter_maxGraph(G,filter_set):
+def filter_Graph(G,filter_set):
     """
     This allows us to apply a set of filters encoded as closures/first-order functions that take a graph as input and return a graph as output.
     """
