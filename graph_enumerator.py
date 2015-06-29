@@ -243,6 +243,39 @@ def orphan_nodes_filter(list_of_orphan_nodes):
     new_list = [(node,[]) for node in list_of_orphan_nodes]
     return extract_remove_inward_edges_filter(new_list)
 
+def new_conditional_graph_set(graph_set,condition_list):
+    """
+    This returns a copy of the old graph_set and a new graph generator which has 
+    the conditions in condition_list applied to it.
+    
+    Warning: This function will devour the iterator that you include as the graph_set input, 
+    you need to redeclare the variable as one of the return values of the function.
+    
+    Thus a correct use would be:
+    a,b = new_conditional_graph_set(a,c)
+    
+    The following would not be a correct use:
+    x,y = new_conditional_graph_set(a,c)
+    
+    Variables: 
+    graph_set is a graph-set generator
+    condition_list is a list of first order functions returning boolean values when passed a graph.
+    """
+    
+    try: 
+        condition_list[0]
+    except TypeError:
+        raise TypeError("""
+        Subsampling from a graph requires passing in a list of conditions encoded
+        as first-class functions that accept networkX graphs as an input and return boolean values.""")
+    graph_set_newer, graph_set_test = tee(graph_set,2)
+    def gen():
+        for G in graph_set_test:
+            G_test = G.copy()
+            if all([c(G_test) for c in condition_list]):
+                yield G_test
+    return graph_set_newer, gen()
+
 # def add_edge_attribute(graph,edge,attribute_name,attribute_value):
 #     graph[edge[0]][edge[1]][attribute_name]=attribute_value
 #     pass
