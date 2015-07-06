@@ -1,3 +1,7 @@
+"""
+This is the original version of the code that is written about in the section `Causal Bayesian NetworkX: Graphs` in the paper "Causal Bayesian NetworkX" by M.D. Pacer, which can be found at https://github.com/michaelpacer/scipy_proceedings/tree/2015/papers/mike_pacer.
+"""
+
 def completeDiGraph(nodes):
     """
     Building a max-graph from a set of n nodes.

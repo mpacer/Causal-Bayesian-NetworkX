@@ -1,5 +1,5 @@
 """
-This is the unminified version of the code found 
+This is the original version of the code that is written about in the section `Example: |cbnx| implementation for sprinkler graph` in the paper "Causal Bayesian NetworkX" by M.D. Pacer, which can be found at https://github.com/michaelpacer/scipy_proceedings/tree/2015/papers/mike_pacer.
 """
 
 
