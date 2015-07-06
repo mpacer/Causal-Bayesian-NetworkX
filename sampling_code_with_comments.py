@@ -1,3 +1,6 @@
+"""
+This is the unminified version of the code found 
+"""
 
 
 node_prop_list = [
