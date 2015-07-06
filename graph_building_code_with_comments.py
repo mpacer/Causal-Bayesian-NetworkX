@@ -85,6 +85,12 @@ def new_conditional_graph_set(graph_set,cond_list):
     return graph_set_newer, gen()
 
 
+def create_path_complete_condition(node_pairs):
+    """ Cretaes a graph condition that returns true only if a subgraph has a directed path from the first node to the second for every pair of nodes int he node_pairs list.
+    """
+    def path_complete_condition(G):
+        return all([nx.has_path(G,x,y) for x,y in node_pairs])
+    return path_complete_condition
 
 def extract_remove_self_loops_filter():
     def remove_self_loops_filter(G):
